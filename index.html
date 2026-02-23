@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+<head>
+  <title>Model Finder</title>
+</head>
+<body>
+  <h1>Model Finder</h1>
+  <input id="q" placeholder="Search model..." />
+  <ul id="results"></ul>
+
+<script>
+const DATA = [
+  { model: "BN59-01385A", brand: "Samsung" },
+  { model: "BN59-01455A", brand: "Samsung" },
+  { model: "RM-YD092", brand: "Sony" }
+];
+
+const q = document.getElementById("q");
+const results = document.getElementById("results");
+
+q.addEventListener("input", () => {
+  const search = q.value.toLowerCase();
+  results.innerHTML = "";
+  DATA.filter(x => x.model.toLowerCase().includes(search))
+      .forEach(x => {
+        const li = document.createElement("li");
+        li.textContent = x.model + " (" + x.brand + ")";
+        results.appendChild(li);
+      });
+});
+</script>
+
+</body>
+</html>
