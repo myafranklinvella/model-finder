@@ -1,33 +1,225 @@
 <!doctype html>
 <html>
 <head>
-  <title>Model Finder</title>
+<meta charset="UTF-8">
+<title>Remote Model Finder</title>
+
+<style>
+body{
+  font-family:Arial;
+  background:#f5f5f5;
+  padding:40px;
+}
+
+#searchBox{
+  width:400px;
+  padding:12px;
+  font-size:16px;
+}
+
+#results{
+  margin-top:20px;
+  background:white;
+  border-radius:8px;
+  max-width:700px;
+}
+
+.result{
+  padding:12px;
+  border-bottom:1px solid #eee;
+}
+
+.model{
+  font-weight:bold;
+}
+
+.remote{
+  color:#555;
+}
+
+.brand{
+  font-size:12px;
+  color:#888;
+}
+</style>
+
 </head>
 <body>
-  <h1>Model Finder</h1>
-  <input id="q" placeholder="Search model..." />
-  <ul id="results"></ul>
+
+<h1>Remote Model Finder</h1>
+
+<input id="searchBox" placeholder="Enter your TV model number">
+
+<div id="results"></div>
 
 <script>
-const DATA = [
-  { model: "BN59-01385A", brand: "Samsung" },
-  { model: "BN59-01455A", brand: "Samsung" },
-  { model: "RM-YD092", brand: "Sony" }
+
+/*
+==============================
+REMOTE DATABASE
+==============================
+Each model links to the remote that works with it
+*/
+
+const DATABASE = [
+
+{
+brand:"Samsung",
+models:[
+"BN59-01385A",
+"BN59-01455A",
+"BN59-01312A",
+"BN59-01259B",
+"BN59-01315J"
+],
+remote:{
+sku:"AA59-00741A",
+name:"Samsung Replacement Smart Remote"
+}
+},
+
+{
+brand:"Sony",
+models:[
+"RM-YD092",
+"RM-YD103",
+"RM-YD120"
+],
+remote:{
+sku:"RM-YD092",
+name:"Sony Smart TV Remote"
+}
+},
+
+{
+brand:"LG",
+models:[
+"AKB74915324",
+"AKB75675304",
+"AKB75095307"
+],
+remote:{
+sku:"AKB74915324",
+name:"LG Magic Remote"
+}
+}
+
 ];
 
-const q = document.getElementById("q");
-const results = document.getElementById("results");
 
-q.addEventListener("input", () => {
-  const search = q.value.toLowerCase();
-  results.innerHTML = "";
-  DATA.filter(x => x.model.toLowerCase().includes(search))
-      .forEach(x => {
-        const li = document.createElement("li");
-        li.textContent = x.model + " (" + x.brand + ")";
-        results.appendChild(li);
-      });
+/*
+==============================
+NORMALISE MODEL NUMBER
+removes spaces and hyphens
+BN59-01455A == BN5901455A
+==============================
+*/
+
+function normalise(model){
+return model
+.toUpperCase()
+.replace(/[\s\-]/g,"");
+}
+
+
+/*
+==============================
+BUILD SEARCH INDEX
+==============================
+*/
+
+const INDEX = [];
+
+DATABASE.forEach(group=>{
+
+group.models.forEach(model=>{
+
+INDEX.push({
+model:model,
+modelNorm:normalise(model),
+brand:group.brand,
+remote:group.remote
 });
+
+});
+
+});
+
+
+/*
+==============================
+SEARCH ENGINE
+==============================
+*/
+
+function searchModels(query){
+
+const q = normalise(query);
+
+if(q.length < 2) return [];
+
+let results = [];
+
+INDEX.forEach(item=>{
+
+let score = 0;
+
+if(item.modelNorm === q) score = 100;
+else if(item.modelNorm.startsWith(q)) score = 70;
+else if(item.modelNorm.includes(q)) score = 40;
+
+if(score>0){
+results.push({
+...item,
+score:score
+});
+}
+
+});
+
+results.sort((a,b)=>b.score-a.score);
+
+return results.slice(0,20);
+
+}
+
+
+/*
+==============================
+UI
+==============================
+*/
+
+const searchBox = document.getElementById("searchBox");
+const resultsDiv = document.getElementById("results");
+
+searchBox.addEventListener("input",()=>{
+
+const q = searchBox.value;
+
+resultsDiv.innerHTML = "";
+
+if(q.length < 2) return;
+
+const results = searchModels(q);
+
+results.forEach(r=>{
+
+const div = document.createElement("div");
+div.className="result";
+
+div.innerHTML = `
+<div class="model">${r.model}</div>
+<div class="brand">${r.brand}</div>
+<div class="remote">Compatible Remote: <b>${r.remote.sku}</b> — ${r.remote.name}</div>
+`;
+
+resultsDiv.appendChild(div);
+
+});
+
+});
+
 </script>
 
 </body>
